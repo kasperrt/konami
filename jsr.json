@@ -1,0 +1,18 @@
+{
+  "name": "@kasperrt/konami",
+  "version": "0.0.1",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "compatibility": {
+    "deno": true,
+    "node": ">=18",
+    "browser": true,
+    "bun": true
+  },
+  "license": "MIT",
+  "publish": {
+    "include": ["README.md", "src/**/*.ts", "package.json"],
+    "exclude": ["**/*.test.ts"]
+  }
+}

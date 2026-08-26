@@ -1,0 +1,57 @@
+{
+  "name": "@kasperrt/konami",
+  "version": "0.0.1",
+  "description": "A tiny, dependency-free keyboard sequence listener with a callback-first API.",
+  "type": "module",
+  "keywords": [
+    "konami",
+    "konami-code",
+    "keyboard",
+    "keyboard-shortcut",
+    "easter-egg",
+    "browser",
+    "typescript",
+    "zero-dependency"
+  ],
+  "author": "Kasper Rynning-Tønnesen <kasperrt@users.noreply.github.com> (https://github.com/kasperrt)",
+  "license": "MIT",
+  "homepage": "https://github.com/kasperrt/konami#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kasperrt/konami.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kasperrt/konami/issues"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "check": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
