@@ -15,26 +15,34 @@ export type KonamiCallback = (event: KeyboardEvent) => void;
 export type KonamiCleanup = () => void;
 
 const packedSequence = BigInt("308174127199173927773734");
-const getExpectedKeyCode = (index: number): number =>
-  Number((packedSequence >> BigInt(index << 3)) & 255n);
+const getExpectedKeyCode = (index: number): number => {
+  return Number((packedSequence >> BigInt(index << 3)) & 255n);
+};
 
 const getKeyCode = (event: KeyboardEvent): number => {
   const legacyKeyCode = event.which || event.keyCode;
-  if (legacyKeyCode) return legacyKeyCode;
+  if (legacyKeyCode) {
+    return legacyKeyCode;
+  }
 
   const key = event.key;
-  if (key.length === 1) return key.toUpperCase().charCodeAt(0);
+  if (key.length === 1) {
+    return key.toUpperCase().charCodeAt(0);
+  }
 
   const directionCode = key.charCodeAt(5);
-  return directionCode === 85
-    ? 38
-    : directionCode === 68
-      ? 40
-      : directionCode === 76
-        ? 37
-        : directionCode === 82
-          ? 39
-          : 0;
+  switch (directionCode) {
+    case 85:
+      return 38;
+    case 68:
+      return 40;
+    case 76:
+      return 37;
+    case 82:
+      return 39;
+    default:
+      return 0;
+  }
 };
 
 /**
@@ -55,7 +63,10 @@ export function konami(
   let active = true;
 
   const stop: KonamiCleanup = () => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
+
     active = false;
     target.removeEventListener("keydown", read, options.capture);
   };
@@ -66,21 +77,34 @@ export function konami(
 
     if (keyCode === getExpectedKeyCode(cursor)) {
       cursor += 1;
-      if (cursor !== 10) return;
+      if (cursor !== 10) {
+        return;
+      }
 
       cursor = 0;
-      if (options.once) stop();
+      if (options.once) {
+        stop();
+      }
+
       callback(keyboardEvent);
       return;
     }
 
-    cursor = keyCode === getExpectedKeyCode(0) ? 1 : 0;
+    if (keyCode === getExpectedKeyCode(0)) {
+      cursor = 1;
+    } else {
+      cursor = 0;
+    }
   };
 
   try {
     target.addEventListener("keydown", read, options.capture);
   } catch (error) {
-    return [error instanceof Error ? error : new Error("Unknown error"), null];
+    if (error instanceof Error) {
+      return [error, null];
+    }
+
+    return [new Error("Unknown error"), null];
   }
 
   return [null, stop];
