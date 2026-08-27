@@ -11,7 +11,7 @@ export interface KonamiOptions {
   capture?: boolean;
 }
 
-export type KonamiCallback = (event: KeyboardEvent) => void;
+export type KonamiCallback = () => void;
 export type KonamiCleanup = () => void;
 
 const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
@@ -111,7 +111,7 @@ export function konami(
         stop();
       }
 
-      callback(keyboardEvent);
+      callback();
       return;
     }
 
