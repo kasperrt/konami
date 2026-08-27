@@ -1,8 +1,6 @@
 import { safeWrap, type SafeWrap } from "./safeWrap.js";
 
-export type { SafeWrap } from "./safeWrap.js";
-
-export interface KonamiOptions {
+interface KonamiOptions {
   /** Event target to observe. Defaults to `document`. */
   target?: EventTarget;
   /** Remove the listener after its first successful trigger. */
@@ -11,8 +9,8 @@ export interface KonamiOptions {
   capture?: boolean;
 }
 
-export type KonamiCallback = () => void;
-export type KonamiCleanup = () => void;
+type KonamiCallback = () => void;
+type KonamiCleanup = () => void;
 
 const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
   if (typeof globalThis === "undefined") {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import konami, { konami as namedKonami } from "../dist/index.js";
+import * as packageExports from "../dist/index.js";
 
 const sequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
 
@@ -16,6 +17,7 @@ function press(target, keyCode) {
 
 test("exposes matching default and named exports", () => {
   assert.equal(namedKonami, konami);
+  assert.deepEqual(Object.keys(packageExports).sort(), ["default", "konami"]);
 });
 
 test("calls back when the sequence completes", () => {

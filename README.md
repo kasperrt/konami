@@ -53,8 +53,8 @@ environment failures retain their original error in `error.cause`. The
 successful data value is the cleanup function. Outside a document environment,
 pass an explicit `EventTarget` through `target`.
 
-The package exports `konami`, `SafeWrap`, `KonamiOptions`, `KonamiCallback`,
-and `KonamiCleanup`; `konami` is also the default export.
+`konami` is the package's only public API and is available as both a named and
+default export.
 
 ## License
 
