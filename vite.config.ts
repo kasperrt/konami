@@ -10,9 +10,22 @@ export default defineConfig({
       fileName: "index",
       formats: ["es"],
     },
-    minify: true,
+    minify: "terser",
     outDir: "dist",
     sourcemap: false,
     target: "es2020",
+    terserOptions: {
+      compress: {
+        evaluate: false,
+        passes: 3,
+      },
+      format: {
+        comments: false,
+      },
+      mangle: {
+        toplevel: true,
+      },
+      module: true,
+    },
   },
 });
