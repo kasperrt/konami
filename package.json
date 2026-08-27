@@ -43,15 +43,15 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "node scripts/build.mjs && tsc --project tsconfig.build.json",
+    "build": "vite build && tsc --project tsconfig.build.json",
     "check": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
     "pack:check": "npm pack --dry-run"
   },
   "devDependencies": {
-    "esbuild": "^0.25.9",
     "javascript-obfuscator": "^4.1.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "8.1.2"
   },
   "engines": {
     "node": ">=18"
