@@ -10,18 +10,27 @@ export interface KonamiOptions {
 export type KonamiCallback = (event: KeyboardEvent) => void;
 export type KonamiCleanup = () => void;
 
-const Ξ = 0x41422725272528282626n;
-const ψ = (ν: number) => Number((Ξ >> BigInt(ν << 3)) & 255n);
+const packedSequence = BigInt("308174127199173927773734");
+const getExpectedKeyCode = (index: number): number =>
+  Number((packedSequence >> BigInt(index << 3)) & 255n);
 
-const κ = (ε: KeyboardEvent): number => {
-  const ν = ε.which || ε.keyCode;
-  if (ν) return ν;
+const getKeyCode = (event: KeyboardEvent): number => {
+  const legacyKeyCode = event.which || event.keyCode;
+  if (legacyKeyCode) return legacyKeyCode;
 
-  const ξ = ε.key;
-  if (ξ.length === 1) return ξ.toUpperCase().charCodeAt(0);
+  const key = event.key;
+  if (key.length === 1) return key.toUpperCase().charCodeAt(0);
 
-  const ρ = ξ.charCodeAt(5);
-  return ρ === 85 ? 38 : ρ === 68 ? 40 : ρ === 76 ? 37 : ρ === 82 ? 39 : 0;
+  const directionCode = key.charCodeAt(5);
+  return directionCode === 85
+    ? 38
+    : directionCode === 68
+      ? 40
+      : directionCode === 76
+        ? 37
+        : directionCode === 82
+          ? 39
+          : 0;
 };
 
 /**
@@ -49,9 +58,9 @@ export function konami(
 
   const read = (event: Event): void => {
     const keyboardEvent = event as KeyboardEvent;
-    const value = κ(keyboardEvent);
+    const keyCode = getKeyCode(keyboardEvent);
 
-    if (value === ψ(cursor)) {
+    if (keyCode === getExpectedKeyCode(cursor)) {
       cursor += 1;
       if (cursor !== 10) return;
 
@@ -61,7 +70,7 @@ export function konami(
       return;
     }
 
-    cursor = value === ψ(0) ? 1 : 0;
+    cursor = keyCode === getExpectedKeyCode(0) ? 1 : 0;
   };
 
   target.addEventListener("keydown", read, options.capture);

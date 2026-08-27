@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import konami from "../dist/index.js";
+import konami, { konami as namedKonami } from "../dist/index.js";
 
 const sequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
 
@@ -13,6 +13,10 @@ function press(target, keyCode) {
   });
   target.dispatchEvent(event);
 }
+
+test("exposes matching default and named exports", () => {
+  assert.equal(namedKonami, konami);
+});
 
 test("calls back when the sequence completes", () => {
   const target = new EventTarget();
