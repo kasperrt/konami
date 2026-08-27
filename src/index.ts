@@ -5,24 +5,14 @@ export interface KonamiOptions {
   once?: boolean;
   /** Listen during the capture phase. */
   capture?: boolean;
-  /** Receive errors raised after setup, including callback and cleanup errors. */
-  onError?: (error: Error) => void | Promise<void>;
 }
 
 export type SafeWrap<ErrorType = Error, DataType = unknown> =
   | [error: ErrorType, data: null]
   | [error: null, data: DataType];
 
-export type KonamiCallback = (event: KeyboardEvent) => void | Promise<void>;
-export type KonamiCleanup = () => SafeWrap<Error, void>;
-
-const safeWrap = <DataType>(callback: () => DataType): SafeWrap<Error, DataType> => {
-  try {
-    return [null, callback()];
-  } catch (error) {
-    return [error instanceof Error ? error : new Error("Unknown error"), null];
-  }
-};
+export type KonamiCallback = (event: KeyboardEvent) => void;
+export type KonamiCleanup = () => void;
 
 const packedSequence = BigInt("308174127199173927773734");
 const getExpectedKeyCode = (index: number): number =>
@@ -55,64 +45,45 @@ export function konami(
   callback: KonamiCallback,
   options: KonamiOptions = {},
 ): SafeWrap<Error, KonamiCleanup> {
-  const [targetError, target] = safeWrap(
-    () => options.target ?? globalThis.document,
-  );
-
-  if (targetError) return [targetError, null];
+  const target = options.target ?? globalThis.document;
 
   if (!target) {
     return [new Error("konami requires a target outside a browser"), null];
   }
 
-  return safeWrap(() => {
-    let cursor = 0;
-    let active = true;
+  let cursor = 0;
+  let active = true;
 
-    const reportError = (error: Error): void => {
-      const [, reportResult] = safeWrap(() => options.onError?.(error));
-      if (reportResult) safeWrap(() => void reportResult.catch(() => {}));
-    };
+  const stop: KonamiCleanup = () => {
+    if (!active) return;
+    active = false;
+    target.removeEventListener("keydown", read, options.capture);
+  };
 
-    const stop: KonamiCleanup = () =>
-      safeWrap(() => {
-        if (!active) return;
-        active = false;
-        target.removeEventListener("keydown", read, options.capture);
-      });
+  const read = (event: Event): void => {
+    const keyboardEvent = event as KeyboardEvent;
+    const keyCode = getKeyCode(keyboardEvent);
 
-    const read = (event: Event): void => {
-      const [readError] = safeWrap(() => {
-        const keyboardEvent = event as KeyboardEvent;
-        const keyCode = getKeyCode(keyboardEvent);
+    if (keyCode === getExpectedKeyCode(cursor)) {
+      cursor += 1;
+      if (cursor !== 10) return;
 
-        if (keyCode === getExpectedKeyCode(cursor)) {
-          cursor += 1;
-          if (cursor !== 10) return;
+      cursor = 0;
+      if (options.once) stop();
+      callback(keyboardEvent);
+      return;
+    }
 
-          cursor = 0;
-          if (options.once) {
-            const [stopError] = stop();
-            if (stopError) reportError(stopError);
-          }
+    cursor = keyCode === getExpectedKeyCode(0) ? 1 : 0;
+  };
 
-          const [callbackError, callbackResult] = safeWrap(() =>
-            callback(keyboardEvent),
-          );
-          if (callbackError) reportError(callbackError);
-          if (callbackResult) void callbackResult.catch(reportError);
-          return;
-        }
-
-        cursor = keyCode === getExpectedKeyCode(0) ? 1 : 0;
-      });
-
-      if (readError) reportError(readError);
-    };
-
+  try {
     target.addEventListener("keydown", read, options.capture);
-    return stop;
-  });
+  } catch (error) {
+    return [error instanceof Error ? error : new Error("Unknown error"), null];
+  }
+
+  return [null, stop];
 }
 
 export default konami;
