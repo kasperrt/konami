@@ -48,7 +48,9 @@ konami(
 
 The callback receives the final `KeyboardEvent`. Listener creation uses an
 error-first `[error, data]` tuple, so setup errors are values rather than
-exceptions. The successful data value is the cleanup function.
+exceptions. Registration and environment failures retain their original error
+in `error.cause`. The successful data value is the cleanup function. Outside a
+document environment, pass an explicit `EventTarget` through `target`.
 
 The package exports `konami`, `SafeWrap`, `KonamiOptions`, `KonamiCallback`,
 and `KonamiCleanup`; `konami` is also the default export.

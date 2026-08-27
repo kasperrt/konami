@@ -74,6 +74,19 @@ test("returns setup errors as values", () => {
 
   const [error, stop] = konami(() => {}, { target });
 
-  assert.equal(error?.message, "setup failed");
+  assert.equal(error?.message, "Unable to register the Konami listener");
+  assert.equal(error?.cause?.message, "setup failed");
+  assert.equal(stop, null);
+});
+
+test("returns a contextual error when no document target exists", () => {
+  const [error, stop] = konami(() => {});
+
+  assert.equal(error?.message, "Unable to initialize the Konami listener");
+  assert.equal(error?.cause?.message, "Unable to find a default event target");
+  assert.equal(
+    error?.cause?.cause?.message,
+    "globalThis.document is unavailable",
+  );
   assert.equal(stop, null);
 });
