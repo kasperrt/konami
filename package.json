@@ -49,7 +49,6 @@
     "pack:check": "npm pack --dry-run"
   },
   "devDependencies": {
-    "javascript-obfuscator": "^4.1.1",
     "typescript": "^7.0.2",
     "vite": "8.1.2"
   },

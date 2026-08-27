@@ -1,36 +1,6 @@
 import { resolve } from "node:path";
 
-import JavaScriptObfuscator from "javascript-obfuscator";
-import { defineConfig, type Plugin } from "vite";
-
-const obfuscate = (): Plugin => {
-  return {
-    name: "obfuscate",
-    enforce: "post",
-    generateBundle(_, bundle) {
-      for (const output of Object.values(bundle)) {
-        if (output.type !== "chunk") {
-          continue;
-        }
-
-        output.code = JavaScriptObfuscator.obfuscate(output.code, {
-          compact: true,
-          identifierNamesGenerator: "hexadecimal",
-          renameGlobals: true,
-          reservedNames: ["^konami$"],
-          rotateStringArray: true,
-          seed: 8675309,
-          shuffleStringArray: true,
-          simplify: true,
-          stringArray: true,
-          stringArrayIndexShift: true,
-          stringArrayThreshold: 1,
-          transformObjectKeys: true,
-        }).getObfuscatedCode();
-      }
-    },
-  };
-};
+import { defineConfig } from "vite";
 
 export default defineConfig({
   build: {
@@ -45,5 +15,4 @@ export default defineConfig({
     sourcemap: false,
     target: "es2020",
   },
-  plugins: [obfuscate()],
 });
