@@ -28,6 +28,13 @@ const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
 };
 
 const packedSequence = 308174127199n * 1000000000000n + 173927773734n;
+const directionKeyCodes: Record<string, number> = {
+  U: 38,
+  D: 40,
+  L: 37,
+  R: 39,
+};
+
 const getExpectedKeyCode = (index: number): number => {
   return Number((packedSequence >> BigInt(index << 3)) & 255n);
 };
@@ -43,19 +50,7 @@ const getKeyCode = (event: KeyboardEvent): number => {
     return key.toUpperCase().charCodeAt(0);
   }
 
-  const directionCode = key.charCodeAt(5);
-  switch (directionCode) {
-    case 85:
-      return 38;
-    case 68:
-      return 40;
-    case 76:
-      return 37;
-    case 82:
-      return 39;
-    default:
-      return 0;
-  }
+  return directionKeyCodes[key.charAt(5)] ?? 0;
 };
 
 /**
