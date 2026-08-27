@@ -32,7 +32,7 @@ test("calls back when the sequence completes", () => {
   sequence.forEach((key) => press(target, key));
 
   assert.equal(triggers, 2);
-  assert.deepEqual(stop(), [null, undefined]);
+  assert.equal(stop(), undefined);
 });
 
 test("supports once and cleanup", () => {
@@ -47,7 +47,7 @@ test("supports once and cleanup", () => {
 
   sequence.forEach((key) => press(target, key));
   sequence.forEach((key) => press(target, key));
-  assert.deepEqual(stop(), [null, undefined]);
+  assert.equal(stop(), undefined);
 
   assert.equal(triggers, 1);
 });
@@ -76,21 +76,4 @@ test("returns setup errors as values", () => {
 
   assert.equal(error?.message, "setup failed");
   assert.equal(stop, null);
-});
-
-test("reports callback errors without throwing", async () => {
-  const target = new EventTarget();
-  const errors = [];
-  const [error] = konami(
-    async () => {
-      throw new Error("callback failed");
-    },
-    { target, onError: (callbackError) => errors.push(callbackError) },
-  );
-
-  assert.equal(error, null);
-  sequence.forEach((key) => press(target, key));
-  await Promise.resolve();
-
-  assert.equal(errors[0]?.message, "callback failed");
 });

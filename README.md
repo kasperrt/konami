@@ -31,7 +31,7 @@ if (error) {
 }
 
 // Remove it whenever you want:
-const [stopError] = stop();
+stop();
 ```
 
 Pass a custom event target or make the listener self-destruct after one use:
@@ -42,14 +42,13 @@ konami(
   {
     target: window,
     once: true,
-    onError: (error) => console.error(error),
   },
 );
 ```
 
-The callback receives the final `KeyboardEvent`. Setup and cleanup use
-error-first `[error, data]` tuples, while errors raised later by callbacks or
-event targets are passed to `onError`. Nothing is thrown by the package.
+The callback receives the final `KeyboardEvent`. Listener creation uses an
+error-first `[error, data]` tuple, so setup errors are values rather than
+exceptions. The successful data value is the cleanup function.
 
 The package exports `konami`, `SafeWrap`, `KonamiOptions`, `KonamiCallback`,
 and `KonamiCleanup`; `konami` is also the default export.
