@@ -21,8 +21,10 @@ test("exposes matching default and named exports", () => {
 test("calls back when the sequence completes", () => {
   const target = new EventTarget();
   let triggers = 0;
-  const [error, stop] = konami(() => {
+  let callbackArgumentCount = -1;
+  const [error, stop] = konami((...callbackArguments) => {
     triggers++;
+    callbackArgumentCount = callbackArguments.length;
   }, { target });
 
   assert.equal(error, null);
@@ -32,6 +34,7 @@ test("calls back when the sequence completes", () => {
   sequence.forEach((key) => press(target, key));
 
   assert.equal(triggers, 2);
+  assert.equal(callbackArgumentCount, 0);
   assert.equal(stop(), undefined);
 });
 
