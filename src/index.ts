@@ -5,67 +5,114 @@ export interface KonamiOptions {
   once?: boolean;
   /** Listen during the capture phase. */
   capture?: boolean;
+  /** Receive errors raised after setup, including callback and cleanup errors. */
+  onError?: (error: Error) => void | Promise<void>;
 }
 
-export type KonamiCallback = (event: KeyboardEvent) => void;
-export type KonamiCleanup = () => void;
+export type SafeWrap<ErrorType = Error, DataType = unknown> =
+  | [error: ErrorType, data: null]
+  | [error: null, data: DataType];
 
-const Ξ = 0x41422725272528282626n;
-const ψ = (ν: number) => Number((Ξ >> BigInt(ν << 3)) & 255n);
+export type KonamiCallback = (event: KeyboardEvent) => void | Promise<void>;
+export type KonamiCleanup = () => SafeWrap<Error, void>;
 
-const κ = (ε: KeyboardEvent): number => {
-  const ν = ε.which || ε.keyCode;
-  if (ν) return ν;
+const safeWrap = <DataType>(callback: () => DataType): SafeWrap<Error, DataType> => {
+  try {
+    return [null, callback()];
+  } catch (error) {
+    return [error instanceof Error ? error : new Error("Unknown error"), null];
+  }
+};
 
-  const ξ = ε.key;
-  if (ξ.length === 1) return ξ.toUpperCase().charCodeAt(0);
+const packedSequence = BigInt("308174127199173927773734");
+const getExpectedKeyCode = (index: number): number =>
+  Number((packedSequence >> BigInt(index << 3)) & 255n);
 
-  const ρ = ξ.charCodeAt(5);
-  return ρ === 85 ? 38 : ρ === 68 ? 40 : ρ === 76 ? 37 : ρ === 82 ? 39 : 0;
+const getKeyCode = (event: KeyboardEvent): number => {
+  const legacyKeyCode = event.which || event.keyCode;
+  if (legacyKeyCode) return legacyKeyCode;
+
+  const key = event.key;
+  if (key.length === 1) return key.toUpperCase().charCodeAt(0);
+
+  const directionCode = key.charCodeAt(5);
+  return directionCode === 85
+    ? 38
+    : directionCode === 68
+      ? 40
+      : directionCode === 76
+        ? 37
+        : directionCode === 82
+          ? 39
+          : 0;
 };
 
 /**
  * Listen for the classic hidden keyboard sequence and run `callback` when it
- * completes. Calling the returned function removes the listener.
+ * completes. The successful value is a function that removes the listener.
  */
 export function konami(
   callback: KonamiCallback,
   options: KonamiOptions = {},
-): KonamiCleanup {
-  const target = options.target ?? globalThis.document;
+): SafeWrap<Error, KonamiCleanup> {
+  const [targetError, target] = safeWrap(
+    () => options.target ?? globalThis.document,
+  );
+
+  if (targetError) return [targetError, null];
 
   if (!target) {
-    throw new Error("konami requires a target outside a browser");
+    return [new Error("konami requires a target outside a browser"), null];
   }
 
-  let cursor = 0;
-  let active = true;
+  return safeWrap(() => {
+    let cursor = 0;
+    let active = true;
 
-  const stop = (): void => {
-    if (!active) return;
-    active = false;
-    target.removeEventListener("keydown", read, options.capture);
-  };
+    const reportError = (error: Error): void => {
+      const [, reportResult] = safeWrap(() => options.onError?.(error));
+      if (reportResult) safeWrap(() => void reportResult.catch(() => {}));
+    };
 
-  const read = (event: Event): void => {
-    const keyboardEvent = event as KeyboardEvent;
-    const value = κ(keyboardEvent);
+    const stop: KonamiCleanup = () =>
+      safeWrap(() => {
+        if (!active) return;
+        active = false;
+        target.removeEventListener("keydown", read, options.capture);
+      });
 
-    if (value === ψ(cursor)) {
-      cursor += 1;
-      if (cursor !== 10) return;
+    const read = (event: Event): void => {
+      const [readError] = safeWrap(() => {
+        const keyboardEvent = event as KeyboardEvent;
+        const keyCode = getKeyCode(keyboardEvent);
 
-      cursor = 0;
-      if (options.once) stop();
-      callback(keyboardEvent);
-      return;
-    }
+        if (keyCode === getExpectedKeyCode(cursor)) {
+          cursor += 1;
+          if (cursor !== 10) return;
 
-    cursor = value === ψ(0) ? 1 : 0;
-  };
+          cursor = 0;
+          if (options.once) {
+            const [stopError] = stop();
+            if (stopError) reportError(stopError);
+          }
 
-  target.addEventListener("keydown", read, options.capture);
-  return stop;
+          const [callbackError, callbackResult] = safeWrap(() =>
+            callback(keyboardEvent),
+          );
+          if (callbackError) reportError(callbackError);
+          if (callbackResult) void callbackResult.catch(reportError);
+          return;
+        }
+
+        cursor = keyCode === getExpectedKeyCode(0) ? 1 : 0;
+      });
+
+      if (readError) reportError(readError);
+    };
+
+    target.addEventListener("keydown", read, options.capture);
+    return stop;
+  });
 }
 
 export default konami;
