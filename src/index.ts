@@ -27,7 +27,7 @@ const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
   return [null, target];
 };
 
-const packedSequence = BigInt("308174127199173927773734");
+const packedSequence = 308174127199n * 1000000000000n + 173927773734n;
 const getExpectedKeyCode = (index: number): number => {
   return Number((packedSequence >> BigInt(index << 3)) & 255n);
 };
