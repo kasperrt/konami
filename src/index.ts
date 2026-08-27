@@ -16,14 +16,14 @@ export type KonamiCleanup = () => void;
 
 const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
   if (typeof globalThis === "undefined") {
-    const cause = new ReferenceError("globalThis is unavailable");
-    return [new Error("Unable to find a default event target", { cause }), null];
+    const cause = new ReferenceError("Global unavailable");
+    return [new Error("No default target", { cause }), null];
   }
 
   const target = globalThis.document;
   if (!target) {
-    const cause = new ReferenceError("globalThis.document is unavailable");
-    return [new Error("Unable to find a default event target", { cause }), null];
+    const cause = new ReferenceError("Document unavailable");
+    return [new Error("No default target", { cause }), null];
   }
 
   return [null, target];
@@ -74,7 +74,7 @@ export function konami(
     const [targetError, defaultTarget] = getDefaultTarget();
     if (targetError) {
       return [
-        new Error("Unable to initialize the Konami listener", {
+        new Error("Listener unavailable", {
           cause: targetError,
         }),
         null,
@@ -127,7 +127,7 @@ export function konami(
 
   if (error) {
     return [
-      new Error("Unable to register the Konami listener", {
+      new Error("Listener setup failed", {
         cause: error,
       }),
       null,
