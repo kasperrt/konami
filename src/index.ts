@@ -1,3 +1,7 @@
+import { safeWrap, type SafeWrap } from "./safeWrap.js";
+
+export type { SafeWrap } from "./safeWrap.js";
+
 export interface KonamiOptions {
   /** Event target to observe. Defaults to `document`. */
   target?: EventTarget;
@@ -7,12 +11,23 @@ export interface KonamiOptions {
   capture?: boolean;
 }
 
-export type SafeWrap<ErrorType = Error, DataType = unknown> =
-  | [error: ErrorType, data: null]
-  | [error: null, data: DataType];
-
 export type KonamiCallback = (event: KeyboardEvent) => void;
 export type KonamiCleanup = () => void;
+
+const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
+  if (typeof globalThis === "undefined") {
+    const cause = new ReferenceError("globalThis is unavailable");
+    return [new Error("Unable to find a default event target", { cause }), null];
+  }
+
+  const target = globalThis.document;
+  if (!target) {
+    const cause = new ReferenceError("globalThis.document is unavailable");
+    return [new Error("Unable to find a default event target", { cause }), null];
+  }
+
+  return [null, target];
+};
 
 const packedSequence = BigInt("308174127199173927773734");
 const getExpectedKeyCode = (index: number): number => {
@@ -53,10 +68,20 @@ export function konami(
   callback: KonamiCallback,
   options: KonamiOptions = {},
 ): SafeWrap<Error, KonamiCleanup> {
-  const target = options.target ?? globalThis.document;
+  let target = options.target;
 
   if (!target) {
-    return [new Error("konami requires a target outside a browser"), null];
+    const [targetError, defaultTarget] = getDefaultTarget();
+    if (targetError) {
+      return [
+        new Error("Unable to initialize the Konami listener", {
+          cause: targetError,
+        }),
+        null,
+      ];
+    }
+
+    target = defaultTarget;
   }
 
   let cursor = 0;
@@ -90,21 +115,23 @@ export function konami(
       return;
     }
 
+    cursor = 0;
     if (keyCode === getExpectedKeyCode(0)) {
       cursor = 1;
-    } else {
-      cursor = 0;
     }
   };
 
-  try {
+  const [error] = safeWrap<unknown, void>(() => {
     target.addEventListener("keydown", read, options.capture);
-  } catch (error) {
-    if (error instanceof Error) {
-      return [error, null];
-    }
+  });
 
-    return [new Error("Unknown error"), null];
+  if (error) {
+    return [
+      new Error("Unable to register the Konami listener", {
+        cause: error,
+      }),
+      null,
+    ];
   }
 
   return [null, stop];
