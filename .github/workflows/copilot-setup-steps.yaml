@@ -6,6 +6,7 @@ on:
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
 
@@ -13,20 +14,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Verify Embroidery secret
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${EMBROIDERY_ACCESS_TOKEN:-}" ]; then
+            echo "EMBROIDERY_ACCESS_TOKEN was not injected"
+            exit 1
+          fi
+
+          echo "EMBROIDERY_ACCESS_TOKEN is available"
+
       - name: Install and start Embroidery
         shell: bash
         env:
           EMBROIDERY_PROVIDER: GITHUBCOPILOT
+          EMBROIDERY_HOME_DIR: /home/runner
+          EMBROIDERY_PROJECT_DIR: ${{ github.workspace }}
         run: |
           set -euo pipefail
-
-          : "${EMBROIDERY_ACCESS_TOKEN:?EMBROIDERY_ACCESS_TOKEN must be configured as an Agents secret}"
-
-          export EMBROIDERY_HOME_DIR="$HOME"
-          export EMBROIDERY_PROJECT_DIR="$GITHUB_WORKSPACE"
 
           curl -fsSL \
             https://stage.outer-rim.sh/apps/naboo-router-api/api/v1/integrations/corellia/installers/clouds \
             | bash -s -- https://stage.outer-rim.sh/apps/naboo-router-api
 
-          "$HOME/.embroidery/bin/embroidery" headless
+          "$EMBROIDERY_HOME_DIR/.embroidery/bin/embroidery" headless
