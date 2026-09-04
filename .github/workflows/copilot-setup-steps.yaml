@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install Embroidery
+      - name: Install and start Embroidery
         shell: bash
         env:
           EMBROIDERY_PROVIDER: GITHUBCOPILOT
@@ -28,3 +28,5 @@ jobs:
           curl -fsSL \
             https://stage.outer-rim.sh/apps/naboo-router-api/api/v1/integrations/corellia/installers/clouds \
             | bash -s -- https://stage.outer-rim.sh/apps/naboo-router-api
+
+          "$HOME/.embroidery/bin/embroidery" headless
