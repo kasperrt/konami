@@ -14,37 +14,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Inspect Copilot identity metadata
-        shell: bash
-        env:
-          COPILOT_AGENT_INPUTS: ${{ github.event.inputs.COPILOT_AGENT_INPUTS }}
-        run: |
-          set -euo pipefail
-
-          printf 'github.actor=%s\n' '${{ github.actor }}'
-          printf 'github.actor_id=%s\n' '${{ github.actor_id }}'
-          printf 'github.triggering_actor=%s\n' '${{ github.triggering_actor }}'
-          printf 'github.event.sender.login=%s\n' '${{ github.event.sender.login }}'
-
-          if [ -z "${COPILOT_AGENT_INPUTS:-}" ]; then
-            echo "COPILOT_AGENT_INPUTS is unavailable during setup"
-            exit 0
-          fi
-
-          echo "Available Copilot input keys:"
-          jq -r 'keys[]' <<< "$COPILOT_AGENT_INPUTS" | sort
-
-          echo "Identity-related Copilot inputs:"
-          jq -r '
-            to_entries[]
-            | select(.key | test("ACTOR|USER|OWNER|JOB|SESSION"; "i"))
-            | select(.key | test("TOKEN|SECRET|NONCE|AUTH"; "i") | not)
-            | "\(.key)=\(.value | tostring)"
-          ' <<< "$COPILOT_AGENT_INPUTS"
-
       - name: Install and start Embroidery
         shell: bash
         env:
+          COPILOT_AGENT_INPUTS: ${{ github.event.inputs.COPILOT_AGENT_INPUTS }}
           EMBROIDERY_ACCESS_TOKEN: ${{ secrets.EMBROIDERY_ACCESS_TOKEN }}
           EMBROIDERY_PROVIDER: GITHUBCOPILOT
           EMBROIDERY_HOME_DIR: /home/runner
