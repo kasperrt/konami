@@ -45,13 +45,15 @@
   "scripts": {
     "build": "vite build && tsc --project tsconfig.build.json",
     "check": "tsc --noEmit",
-    "test": "npm run build && node --test tests/*.test.mjs",
+    "test": "npm run build && tsc --project tsconfig.test.json && vitest run",
     "pack:check": "npm pack --dry-run"
   },
   "devDependencies": {
+    "@types/node": "^22.20.4",
     "terser": "^5.51.0",
     "typescript": "^7.0.2",
-    "vite": "8.1.2"
+    "vite": "8.1.2",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=18"

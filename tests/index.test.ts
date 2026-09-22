@@ -1,14 +1,13 @@
-import assert from "node:assert/strict";
 import { getEventListeners } from "node:events";
 import { readFileSync } from "node:fs";
-import test from "node:test";
+import { assert, expect, test } from "vitest";
 
 import konami, { konami as namedKonami } from "../dist/index.js";
 import * as packageExports from "../dist/index.js";
 
 const sequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
 
-function press(target, keyCode) {
+function press(target: EventTarget, keyCode: number | string): void {
   const event = new Event("keydown");
   Object.defineProperties(event, {
     keyCode: { value: typeof keyCode === "number" ? keyCode : 0 },
@@ -19,14 +18,14 @@ function press(target, keyCode) {
 }
 
 test("exposes matching default and named exports", () => {
-  assert.equal(namedKonami, konami);
-  assert.deepEqual(Object.keys(packageExports).sort(), ["default", "konami"]);
+  expect(namedKonami).toBe(konami);
+  expect(Object.keys(packageExports).sort()).toEqual(["default", "konami"]);
 });
 
 test("keeps arrow-key names obscured in the implementation and bundle", () => {
   for (const path of ["../src/index.ts", "../dist/index.js"]) {
     const content = readFileSync(new URL(path, import.meta.url), "utf8");
-    assert.doesNotMatch(content, /Arrow(?:Up|Down|Left|Right)/);
+    expect(content).not.toMatch(/Arrow(?:Up|Down|Left|Right)/);
   }
 });
 
@@ -39,15 +38,15 @@ test("calls back when the sequence completes", () => {
     callbackArgumentCount = callbackArguments.length;
   }, { target });
 
-  assert.equal(error, null);
-  assert.ok(stop);
+  expect(error).toBeNull();
+  assert(stop);
 
   sequence.forEach((key) => press(target, key));
   sequence.forEach((key) => press(target, key));
 
-  assert.equal(triggers, 2);
-  assert.equal(callbackArgumentCount, 0);
-  assert.equal(stop(), undefined);
+  expect(triggers).toBe(2);
+  expect(callbackArgumentCount).toBe(0);
+  expect(stop()).toBeUndefined();
 });
 
 test("supports once and cleanup", () => {
@@ -57,28 +56,29 @@ test("supports once and cleanup", () => {
     triggers++;
   }, { target, once: true });
 
-  assert.equal(error, null);
-  assert.ok(stop);
+  expect(error).toBeNull();
+  assert(stop);
 
   sequence.forEach((key) => press(target, key));
   sequence.forEach((key) => press(target, key));
-  assert.equal(stop(), undefined);
+  expect(stop()).toBeUndefined();
 
-  assert.equal(triggers, 1);
+  expect(triggers).toBe(1);
 });
 
 test("recovers after unrelated input", () => {
   const target = new EventTarget();
   let triggers = 0;
-  const [error] = konami(() => {
+  const [error, stop] = konami(() => {
     triggers++;
   }, { target });
 
-  assert.equal(error, null);
+  expect(error).toBeNull();
+  assert(stop);
 
   [13, 38, ...sequence.slice(1)].forEach((key) => press(target, key));
 
-  assert.equal(triggers, 1);
+  expect(triggers).toBe(1);
 });
 
 test("recognizes a complete sequence after every partial prefix", () => {
@@ -87,10 +87,11 @@ test("recognizes a complete sequence after every partial prefix", () => {
     let triggers = 0;
     const [error, stop] = konami(() => triggers++, { target });
 
-    assert.equal(error, null);
+    expect(error).toBeNull();
+    assert(stop);
     [...sequence.slice(0, prefixLength), ...sequence].forEach((key) => press(target, key));
 
-    assert.equal(triggers, 1, `prefix length ${prefixLength}`);
+    expect(triggers, `prefix length ${prefixLength}`).toBe(1);
     stop();
   }
 });
@@ -100,10 +101,11 @@ test("retains the last two Up presses across repeated overlapping starts", () =>
   let triggers = 0;
   const [error, stop] = konami(() => triggers++, { target });
 
-  assert.equal(error, null);
+  expect(error).toBeNull();
+  assert(stop);
   [...Array(7).fill(38), ...sequence.slice(2)].forEach((key) => press(target, key));
 
-  assert.equal(triggers, 1);
+  expect(triggers).toBe(1);
   stop();
 });
 
@@ -112,12 +114,13 @@ test("requires a contiguous sequence after unrelated input", () => {
   let triggers = 0;
   const [error, stop] = konami(() => triggers++, { target });
 
-  assert.equal(error, null);
+  expect(error).toBeNull();
+  assert(stop);
   [...sequence.slice(0, 4), 13, ...sequence.slice(4)].forEach((key) => press(target, key));
-  assert.equal(triggers, 0);
+  expect(triggers).toBe(0);
 
   sequence.forEach((key) => press(target, key));
-  assert.equal(triggers, 1);
+  expect(triggers).toBe(1);
   stop();
 });
 
@@ -127,13 +130,14 @@ test("supports modern key values and rejects unrelated named keys", () => {
   let triggers = 0;
   const [error, stop] = konami(() => triggers++, { target });
 
-  assert.equal(error, null);
+  expect(error).toBeNull();
+  assert(stop);
   keys.map((key) => key === "ArrowRight" ? "MediaRecord" : key).forEach((key) => press(target, key));
-  assert.equal(triggers, 0);
+  expect(triggers).toBe(0);
 
   keys.forEach((key) => press(target, key));
   keys.map((key) => key.length === 1 ? key.toUpperCase() : key).forEach((key) => press(target, key));
-  assert.equal(triggers, 2);
+  expect(triggers).toBe(2);
   stop();
 });
 
@@ -142,14 +146,15 @@ test("treats keydown events without keyboard fields as unrelated input", () => {
   let triggers = 0;
   const [error, stop] = konami(() => triggers++, { target });
 
-  assert.equal(error, null);
+  expect(error).toBeNull();
+  assert(stop);
   sequence.slice(0, 4).forEach((key) => press(target, key));
   target.dispatchEvent(new Event("keydown"));
   sequence.slice(4).forEach((key) => press(target, key));
-  assert.equal(triggers, 0);
+  expect(triggers).toBe(0);
 
   sequence.forEach((key) => press(target, key));
-  assert.equal(triggers, 1);
+  expect(triggers).toBe(1);
   stop();
 });
 
@@ -161,8 +166,9 @@ for (const capture of [false, true]) {
       let triggers = 0;
       const [error, stop] = konami(() => triggers++, options);
 
-      assert.equal(error, null);
-      assert.equal(getEventListeners(target, "keydown").length, 1);
+      expect(error).toBeNull();
+      assert(stop);
+      expect(getEventListeners(target, "keydown").length).toBe(1);
       options.capture = !capture;
 
       if (once) {
@@ -171,9 +177,9 @@ for (const capture of [false, true]) {
         stop();
       }
 
-      assert.equal(getEventListeners(target, "keydown").length, 0);
+      expect(getEventListeners(target, "keydown").length).toBe(0);
       sequence.forEach((key) => press(target, key));
-      assert.equal(triggers, once ? 1 : 0);
+      expect(triggers).toBe(once ? 1 : 0);
       stop();
       stop();
     });
@@ -188,9 +194,9 @@ test("returns setup errors as values", () => {
 
   const [error, stop] = konami(() => {}, { target });
 
-  assert.equal(error?.message, "Listener setup failed");
-  assert.equal(error?.cause?.message, "setup failed");
-  assert.equal(stop, null);
+  expect(error?.message).toBe("Listener setup failed");
+  expect(error?.cause).toMatchObject({ message: "setup failed" });
+  expect(stop).toBeNull();
 });
 
 for (const cause of [undefined, null, false, 0, ""]) {
@@ -202,17 +208,19 @@ for (const cause of [undefined, null, false, 0, ""]) {
 
     const [error, stop] = konami(() => {}, { target });
 
-    assert.equal(error?.message, "Listener setup failed");
-    assert.equal(error.cause, cause);
-    assert.equal(stop, null);
+    expect(error?.message).toBe("Listener setup failed");
+    expect(error?.cause).toBe(cause);
+    expect(stop).toBeNull();
   });
 }
 
 test("returns a contextual error when no document target exists", () => {
   const [error, stop] = konami(() => {});
 
-  assert.equal(error?.message, "Listener unavailable");
-  assert.equal(error?.cause?.message, "No default target");
-  assert.equal(error?.cause?.cause?.message, "Document unavailable");
-  assert.equal(stop, null);
+  expect(error?.message).toBe("Listener unavailable");
+  expect(error?.cause).toMatchObject({
+    message: "No default target",
+    cause: { message: "Document unavailable" },
+  });
+  expect(stop).toBeNull();
 });
