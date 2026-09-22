@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { getEventListeners } from "node:events";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import konami, { konami as namedKonami } from "../dist/index.js";
@@ -20,6 +21,13 @@ function press(target, keyCode) {
 test("exposes matching default and named exports", () => {
   assert.equal(namedKonami, konami);
   assert.deepEqual(Object.keys(packageExports).sort(), ["default", "konami"]);
+});
+
+test("keeps arrow-key names obscured in the implementation and bundle", () => {
+  for (const path of ["../src/index.ts", "../dist/index.js"]) {
+    const content = readFileSync(new URL(path, import.meta.url), "utf8");
+    assert.doesNotMatch(content, /Arrow(?:Up|Down|Left|Right)/);
+  }
 });
 
 test("calls back when the sequence completes", () => {
