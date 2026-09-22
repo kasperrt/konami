@@ -29,10 +29,10 @@ const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
 
 const packedSequence = 308174127199n * 1000000000000n + 173927773734n;
 const directionKeyCodes: Record<string, number> = {
-  U: 38,
-  D: 40,
-  L: 37,
-  R: 39,
+  ArrowUp: 38,
+  ArrowDown: 40,
+  ArrowLeft: 37,
+  ArrowRight: 39,
 };
 
 const getExpectedKeyCode = (index: number): number => {
@@ -45,12 +45,12 @@ const getKeyCode = (event: KeyboardEvent): number => {
     return legacyKeyCode;
   }
 
-  const key = event.key;
+  const key = event.key ?? "";
   if (key.length === 1) {
     return key.toUpperCase().charCodeAt(0);
   }
 
-  return directionKeyCodes[key.charAt(5)] ?? 0;
+  return directionKeyCodes[key] ?? 0;
 };
 
 /**
@@ -79,6 +79,7 @@ export function konami(
 
   let cursor = 0;
   let active = true;
+  const listenerOptions = { capture: options.capture };
 
   const stop: KonamiCleanup = () => {
     if (!active) {
@@ -86,7 +87,7 @@ export function konami(
     }
 
     active = false;
-    target.removeEventListener("keydown", read, options.capture);
+    target.removeEventListener("keydown", read, listenerOptions);
   };
 
   const read = (event: Event): void => {
@@ -108,17 +109,16 @@ export function konami(
       return;
     }
 
-    cursor = 0;
-    if (keyCode === getExpectedKeyCode(0)) {
-      cursor = 1;
-    }
+    // Only the initial Up, Up prefix overlaps itself. An extra Up keeps both.
+    cursor = keyCode === getExpectedKeyCode(0) ? (cursor === 2 ? 2 : 1) : 0;
   };
 
-  const [error] = safeWrap<unknown, void>(() => {
-    target.addEventListener("keydown", read, options.capture);
+  const [error, cleanup] = safeWrap<unknown, KonamiCleanup>(() => {
+    target.addEventListener("keydown", read, listenerOptions);
+    return stop;
   });
 
-  if (error) {
+  if (cleanup === null) {
     return [
       new Error("Listener setup failed", {
         cause: error,
@@ -127,7 +127,7 @@ export function konami(
     ];
   }
 
-  return [null, stop];
+  return [null, cleanup];
 }
 
 export default konami;
