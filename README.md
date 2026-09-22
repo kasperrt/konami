@@ -56,6 +56,13 @@ pass an explicit `EventTarget` through `target`.
 `konami` is the package's only public API and is available as both a named and
 default export.
 
+## Development
+
+Run `npm ci` and `npm test` to build the package, type-check the tests, and run
+Vitest against the source and built bundle. Tests require 100% line coverage for
+every file in `src`. Coverage is printed in the terminal and an HTML report is
+written to `coverage/index.html`.
+
 ## License
 
 MIT
