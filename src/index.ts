@@ -28,12 +28,12 @@ const getDefaultTarget = (): SafeWrap<Error, EventTarget> => {
 };
 
 const packedSequence = 308174127199n * 1000000000000n + 173927773734n;
-const directionKeyCodes: Record<string, number> = {
-  U: 38,
-  D: 40,
-  L: 37,
-  R: 39,
-};
+const directionKeyCodes = new Map<bigint, number>([
+  [5197446826917901206610439012941936n, 38],
+  [22322864144311358159350774568003056975675502n, 40],
+  [22322864144311358159350774570254813838573684n, 37],
+  [1462951224561589168331212362346901070071223287924n, 39],
+]);
 
 const getExpectedKeyCode = (index: number): number => {
   return Number((packedSequence >> BigInt(index << 3)) & 255n);
@@ -45,12 +45,21 @@ const getKeyCode = (event: KeyboardEvent): number => {
     return legacyKeyCode;
   }
 
-  const key = event.key;
+  const key = event.key ?? "";
   if (key.length === 1) {
     return key.toUpperCase().charCodeAt(0);
   }
 
-  return directionKeyCodes[key.charAt(5)] ?? 0;
+  if (key.length > 10) {
+    return 0;
+  }
+
+  let packedKey = 1n;
+  for (let index = 0; index < key.length; index++) {
+    packedKey = (packedKey << 16n) | BigInt(key.charCodeAt(index));
+  }
+
+  return directionKeyCodes.get(packedKey) ?? 0;
 };
 
 /**
@@ -79,6 +88,7 @@ export function konami(
 
   let cursor = 0;
   let active = true;
+  const listenerOptions = { capture: options.capture };
 
   const stop: KonamiCleanup = () => {
     if (!active) {
@@ -86,7 +96,7 @@ export function konami(
     }
 
     active = false;
-    target.removeEventListener("keydown", read, options.capture);
+    target.removeEventListener("keydown", read, listenerOptions);
   };
 
   const read = (event: Event): void => {
@@ -108,17 +118,16 @@ export function konami(
       return;
     }
 
-    cursor = 0;
-    if (keyCode === getExpectedKeyCode(0)) {
-      cursor = 1;
-    }
+    // Only the two-key opening prefix overlaps itself.
+    cursor = keyCode === getExpectedKeyCode(0) ? (cursor === 2 ? 2 : 1) : 0;
   };
 
-  const [error] = safeWrap<unknown, void>(() => {
-    target.addEventListener("keydown", read, options.capture);
+  const [error, cleanup] = safeWrap<unknown, KonamiCleanup>(() => {
+    target.addEventListener("keydown", read, listenerOptions);
+    return stop;
   });
 
-  if (error) {
+  if (cleanup === null) {
     return [
       new Error("Listener setup failed", {
         cause: error,
@@ -127,7 +136,7 @@ export function konami(
     ];
   }
 
-  return [null, stop];
+  return [null, cleanup];
 }
 
 export default konami;
