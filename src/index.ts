@@ -69,6 +69,19 @@ const getKeyCode = (event: KeyboardEvent): number => {
 /**
  * Listen for the classic hidden keyboard sequence and run `callback` when it
  * completes. The successful value is a function that removes the listener.
+ *
+ * @param callback Function called without arguments on each completed sequence.
+ * @param options Event target, capture phase, and one-shot behavior.
+ * @returns An error-first tuple containing either a setup error or cleanup function.
+ *
+ * @example
+ * ```ts
+ * import konami from "@kasperrt/konami";
+ *
+ * const [error, stop] = konami(() => console.log("Unlocked!"));
+ * if (error) console.error(error);
+ * if (stop) stop();
+ * ```
  */
 export function konami(
   callback: KonamiCallback,
