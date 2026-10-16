@@ -3,6 +3,11 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      remove_next:
+        description: Remove the obsolete npm next tag after a stable release
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -10,6 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate:
+    if: ${{ !inputs.remove_next }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -80,3 +86,31 @@ jobs:
         run: |
           VERSION=$(node -p 'require("./jsr.json").version')
           curl --fail --retry 5 --retry-all-errors "https://jsr.io/@kasperrt/konami/${VERSION}_meta.json"
+  remove-next:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.remove_next && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm install --global npm@11.21.0
+      - name: Require the stable release before removing next
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          case "$VERSION" in *-*) exit 1 ;; esac
+          test "$(npm view @kasperrt/konami dist-tags.latest)" = "$VERSION"
+          NEXT=$(npm view @kasperrt/konami dist-tags.next)
+          if [ -z "$NEXT" ]; then
+            echo "No next tag remains"
+            exit 0
+          fi
+          case "$NEXT" in "$VERSION"-rc.*) ;; *) echo "Refusing to remove an unrelated prerelease tag"; exit 1 ;; esac
+          npm dist-tag rm @kasperrt/konami next
+          test -z "$(npm view @kasperrt/konami dist-tags.next)"
+          test "$(npm view @kasperrt/konami dist-tags.latest)" = "$VERSION"
