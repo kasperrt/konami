@@ -1,37 +1,14 @@
 name: Copilot Setup Steps
-
 on:
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install and start Embroidery
-        shell: bash
-        env:
-          COPILOT_AGENT_INPUTS: ${{ github.event.inputs.COPILOT_AGENT_INPUTS }}
-          EMBROIDERY_ACCESS_TOKEN: ${{ secrets.EMBROIDERY_ACCESS_TOKEN }}
-          EMBROIDERY_PROVIDER: GITHUBCOPILOT
-          EMBROIDERY_HOME_DIR: /home/runner
-          EMBROIDERY_PROJECT_DIR: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-
-          if [ -z "${EMBROIDERY_ACCESS_TOKEN:-}" ]; then
-            echo "EMBROIDERY_ACCESS_TOKEN was not injected"
-            exit 1
-          fi
-
-          curl -fsSL \
-            https://stage.outer-rim.sh/apps/naboo-router-api/api/v1/integrations/corellia/installers/clouds \
-            | bash -s -- https://stage.outer-rim.sh/apps/naboo-router-api
-
-          "$EMBROIDERY_HOME_DIR/.embroidery/bin/embroidery" headless
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci

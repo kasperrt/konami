@@ -1,4 +1,8 @@
-import { safeWrap, type SafeWrap } from "./safeWrap.js";
+/**
+ * A dependency-free keyboard sequence listener with explicit cleanup.
+ * @module
+ */
+import { type SafeWrap, safeWrap } from "./safeWrap.ts";
 
 interface KonamiOptions {
   /** Event target to observe. Defaults to `document`. */
@@ -65,6 +69,19 @@ const getKeyCode = (event: KeyboardEvent): number => {
 /**
  * Listen for the classic hidden keyboard sequence and run `callback` when it
  * completes. The successful value is a function that removes the listener.
+ *
+ * @param callback Function called without arguments on each completed sequence.
+ * @param options Event target, capture phase, and one-shot behavior.
+ * @returns An error-first tuple containing either a setup error or cleanup function.
+ *
+ * @example
+ * ```ts
+ * import konami from "@kasperrt/konami";
+ *
+ * const [error, stop] = konami(() => console.log("Unlocked!"));
+ * if (error) console.error(error);
+ * if (stop) stop();
+ * ```
  */
 export function konami(
   callback: KonamiCallback,
@@ -86,6 +103,7 @@ export function konami(
     target = defaultTarget;
   }
 
+  const once = options.once;
   let cursor = 0;
   let active = true;
   const listenerOptions = { capture: options.capture };
@@ -100,6 +118,10 @@ export function konami(
   };
 
   const read = (event: Event): void => {
+    if (!active) {
+      return;
+    }
+
     const keyboardEvent = event as KeyboardEvent;
     const keyCode = getKeyCode(keyboardEvent);
 
@@ -110,7 +132,7 @@ export function konami(
       }
 
       cursor = 0;
-      if (options.once) {
+      if (once) {
         stop();
       }
 

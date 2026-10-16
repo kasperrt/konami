@@ -12,7 +12,7 @@
   },
   "license": "MIT",
   "publish": {
-    "include": ["README.md", "src/**/*.ts", "package.json"],
+    "include": ["README.md", "LICENSE", "src/**/*.ts", "jsr.json"],
     "exclude": ["**/*.test.ts"]
   }
 }
