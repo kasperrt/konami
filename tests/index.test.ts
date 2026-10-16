@@ -1,9 +1,11 @@
 import { getEventListeners } from "node:events";
 import { readFileSync } from "node:fs";
-import { assert, describe, expect, test, vi } from "vitest";
+import { afterEach, assert, describe, expect, test, vi } from "vitest";
 
 import * as bundleExports from "../dist/index.js";
 import * as sourceExports from "../src/index.js";
+
+afterEach(() => vi.unstubAllGlobals());
 
 const sequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
 
@@ -39,16 +41,23 @@ describe.each([
     const target = new EventTarget();
     let triggers = 0;
     let callbackArgumentCount = -1;
-    const [error, stop] = konami((...callbackArguments) => {
-      triggers++;
-      callbackArgumentCount = callbackArguments.length;
-    }, { target });
+    const [error, stop] = konami(
+      (...callbackArguments) => {
+        triggers++;
+        callbackArgumentCount = callbackArguments.length;
+      },
+      { target },
+    );
 
     expect(error).toBeNull();
     assert(stop);
 
-    sequence.forEach((key) => press(target, key));
-    sequence.forEach((key) => press(target, key));
+    sequence.forEach((key) => {
+      press(target, key);
+    });
+    sequence.forEach((key) => {
+      press(target, key);
+    });
 
     expect(triggers).toBe(2);
     expect(callbackArgumentCount).toBe(0);
@@ -58,15 +67,22 @@ describe.each([
   test("supports once and cleanup", () => {
     const target = new EventTarget();
     let triggers = 0;
-    const [error, stop] = konami(() => {
-      triggers++;
-    }, { target, once: true });
+    const [error, stop] = konami(
+      () => {
+        triggers++;
+      },
+      { target, once: true },
+    );
 
     expect(error).toBeNull();
     assert(stop);
 
-    sequence.forEach((key) => press(target, key));
-    sequence.forEach((key) => press(target, key));
+    sequence.forEach((key) => {
+      press(target, key);
+    });
+    sequence.forEach((key) => {
+      press(target, key);
+    });
     expect(stop()).toBeUndefined();
 
     expect(triggers).toBe(1);
@@ -75,14 +91,19 @@ describe.each([
   test("recovers after unrelated input", () => {
     const target = new EventTarget();
     let triggers = 0;
-    const [error, stop] = konami(() => {
-      triggers++;
-    }, { target });
+    const [error, stop] = konami(
+      () => {
+        triggers++;
+      },
+      { target },
+    );
 
     expect(error).toBeNull();
     assert(stop);
 
-    [13, 38, ...sequence.slice(1)].forEach((key) => press(target, key));
+    [13, 38, ...sequence.slice(1)].forEach((key) => {
+      press(target, key);
+    });
 
     expect(triggers).toBe(1);
   });
@@ -95,7 +116,9 @@ describe.each([
 
       expect(error).toBeNull();
       assert(stop);
-      [...sequence.slice(0, prefixLength), ...sequence].forEach((key) => press(target, key));
+      [...sequence.slice(0, prefixLength), ...sequence].forEach((key) => {
+        press(target, key);
+      });
 
       expect(triggers, `prefix length ${prefixLength}`).toBe(1);
       stop();
@@ -109,7 +132,9 @@ describe.each([
 
     expect(error).toBeNull();
     assert(stop);
-    [...Array(7).fill(38), ...sequence.slice(2)].forEach((key) => press(target, key));
+    [...Array(7).fill(38), ...sequence.slice(2)].forEach((key) => {
+      press(target, key);
+    });
 
     expect(triggers).toBe(1);
     stop();
@@ -122,27 +147,52 @@ describe.each([
 
     expect(error).toBeNull();
     assert(stop);
-    [...sequence.slice(0, 4), 13, ...sequence.slice(4)].forEach((key) => press(target, key));
+    [...sequence.slice(0, 4), 13, ...sequence.slice(4)].forEach((key) => {
+      press(target, key);
+    });
     expect(triggers).toBe(0);
 
-    sequence.forEach((key) => press(target, key));
+    sequence.forEach((key) => {
+      press(target, key);
+    });
     expect(triggers).toBe(1);
     stop();
   });
 
   test("supports modern key values and rejects unrelated named keys", () => {
     const target = new EventTarget();
-    const keys = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+    const keys = [
+      "ArrowUp",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowLeft",
+      "ArrowRight",
+      "b",
+      "a",
+    ];
     let triggers = 0;
     const [error, stop] = konami(() => triggers++, { target });
 
     expect(error).toBeNull();
     assert(stop);
-    keys.map((key) => key === "ArrowRight" ? "MediaRecord" : key).forEach((key) => press(target, key));
+    keys
+      .map((key) => (key === "ArrowRight" ? "MediaRecord" : key))
+      .forEach((key) => {
+        press(target, key);
+      });
     expect(triggers).toBe(0);
 
-    keys.forEach((key) => press(target, key));
-    keys.map((key) => key.length === 1 ? key.toUpperCase() : key).forEach((key) => press(target, key));
+    keys.forEach((key) => {
+      press(target, key);
+    });
+    keys
+      .map((key) => (key.length === 1 ? key.toUpperCase() : key))
+      .forEach((key) => {
+        press(target, key);
+      });
     expect(triggers).toBe(2);
     stop();
   });
@@ -154,12 +204,18 @@ describe.each([
 
     expect(error).toBeNull();
     assert(stop);
-    sequence.slice(0, 4).forEach((key) => press(target, key));
+    sequence.slice(0, 4).forEach((key) => {
+      press(target, key);
+    });
     target.dispatchEvent(new Event("keydown"));
-    sequence.slice(4).forEach((key) => press(target, key));
+    sequence.slice(4).forEach((key) => {
+      press(target, key);
+    });
     expect(triggers).toBe(0);
 
-    sequence.forEach((key) => press(target, key));
+    sequence.forEach((key) => {
+      press(target, key);
+    });
     expect(triggers).toBe(1);
     stop();
   });
@@ -178,13 +234,18 @@ describe.each([
         options.capture = !capture;
 
         if (once) {
-          sequence.forEach((key) => press(target, key));
-        } else {
+          sequence.forEach((key) => {
+            press(target, key);
+          });
+        }
+        if (!once) {
           stop();
         }
 
         expect(getEventListeners(target, "keydown").length).toBe(0);
-        sequence.forEach((key) => press(target, key));
+        sequence.forEach((key) => {
+          press(target, key);
+        });
         expect(triggers).toBe(once ? 1 : 0);
         stop();
         stop();
@@ -192,25 +253,88 @@ describe.each([
     }
   }
 
+  test("snapshots once and ignores callbacks retained after cleanup", () => {
+    const target = new EventTarget();
+    const registration = vi.spyOn(target, "addEventListener");
+    const options = { target, once: true };
+    const callback = vi.fn();
+    const [error, stop] = konami(callback, options);
+    expect(error).toBeNull();
+    assert(stop);
+    options.once = false;
+    sequence.forEach((key) => {
+      press(target, key);
+    });
+    sequence.forEach((key) => {
+      press(target, key);
+    });
+    expect(callback).toHaveBeenCalledTimes(1);
+    const listener = registration.mock.calls[0]?.[1];
+    assert(typeof listener === "function");
+    listener.call(target, new Event("keydown"));
+    expect(callback).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  test("removes once listeners before a reentrant callback", () => {
+    const target = new EventTarget();
+    const callback = vi.fn(() =>
+      sequence.forEach((key) => {
+        press(target, key);
+      }),
+    );
+    const [error, stop] = konami(callback, { target, once: true });
+    expect(error).toBeNull();
+    assert(stop);
+    sequence.forEach((key) => {
+      press(target, key);
+    });
+    expect(callback).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  test("keeps independent listeners and partial progress isolated", () => {
+    const first = new EventTarget();
+    const second = new EventTarget();
+    const one = vi.fn();
+    const two = vi.fn();
+    const [, stopOne] = konami(one, { target: first });
+    const [, stopTwo] = konami(two, { target: second });
+    assert(stopOne && stopTwo);
+    sequence.slice(0, 5).forEach((key) => {
+      press(first, key);
+    });
+    sequence.forEach((key) => {
+      press(second, key);
+    });
+    sequence.slice(5).forEach((key) => {
+      press(first, key);
+    });
+    expect(one).toHaveBeenCalledTimes(1);
+    expect(two).toHaveBeenCalledTimes(1);
+    stopOne();
+    stopTwo();
+  });
+
   test("returns setup errors as values", () => {
     const target = new EventTarget();
-    target.addEventListener = () => {
-      throw new Error("setup failed");
-    };
+    target.addEventListener = vi
+      .fn()
+      .mockImplementation(() => JSON.parse("setup failed"));
 
     const [error, stop] = konami(() => {}, { target });
 
     expect(error?.message).toBe("Listener setup failed");
-    expect(error?.cause).toMatchObject({ message: "setup failed" });
+    expect(error?.cause).toBeInstanceOf(SyntaxError);
     expect(stop).toBeNull();
   });
 
   for (const cause of [undefined, null, false, 0, ""]) {
     test(`preserves falsy setup failures (${String(cause)})`, () => {
       const target = new EventTarget();
-      target.addEventListener = () => {
+      target.addEventListener = vi.fn().mockImplementation(() => {
         throw cause;
-      };
+      });
 
       const [error, stop] = konami(() => {}, { target });
 
@@ -225,20 +349,22 @@ describe.each([
     let triggers = 0;
     vi.stubGlobal("document", target);
 
-    try {
+    {
       const [error, stop] = konami(() => triggers++);
 
       expect(error).toBeNull();
       assert(stop);
-      sequence.forEach((key) => press(target, key));
+      sequence.forEach((key) => {
+        press(target, key);
+      });
       expect(triggers).toBe(1);
 
       stop();
       expect(getEventListeners(target, "keydown")).toHaveLength(0);
-      sequence.forEach((key) => press(target, key));
+      sequence.forEach((key) => {
+        press(target, key);
+      });
       expect(triggers).toBe(1);
-    } finally {
-      vi.unstubAllGlobals();
     }
   });
 
@@ -246,15 +372,14 @@ describe.each([
     const scope = globalThis;
     const descriptor = Object.getOwnPropertyDescriptor(scope, "globalThis");
     assert(descriptor);
-    let result: ReturnType<typeof konami>;
 
     // Restore the global before assertions or test-runner code can use it.
-    try {
-      Object.defineProperty(scope, "globalThis", { ...descriptor, value: undefined });
-      result = konami(() => {});
-    } finally {
-      Object.defineProperty(scope, "globalThis", descriptor);
-    }
+    Object.defineProperty(scope, "globalThis", {
+      ...descriptor,
+      value: undefined,
+    });
+    const result = konami(() => {});
+    Object.defineProperty(scope, "globalThis", descriptor);
 
     const [error, stop] = result;
     expect(error?.message).toBe("Listener unavailable");

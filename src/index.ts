@@ -1,4 +1,8 @@
-import { safeWrap, type SafeWrap } from "./safeWrap.js";
+/**
+ * A dependency-free keyboard sequence listener with explicit cleanup.
+ * @module
+ */
+import { type SafeWrap, safeWrap } from "./safeWrap.ts";
 
 interface KonamiOptions {
   /** Event target to observe. Defaults to `document`. */
@@ -86,6 +90,7 @@ export function konami(
     target = defaultTarget;
   }
 
+  const once = options.once;
   let cursor = 0;
   let active = true;
   const listenerOptions = { capture: options.capture };
@@ -100,6 +105,10 @@ export function konami(
   };
 
   const read = (event: Event): void => {
+    if (!active) {
+      return;
+    }
+
     const keyboardEvent = event as KeyboardEvent;
     const keyCode = getKeyCode(keyboardEvent);
 
@@ -110,7 +119,7 @@ export function konami(
       }
 
       cursor = 0;
-      if (options.once) {
+      if (once) {
         stop();
       }
 

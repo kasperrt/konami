@@ -1,0 +1,75 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Require a version tag on main
+        run: |
+          case "$GITHUB_REF" in refs/tags/v*) ;; *) exit 1 ;; esac
+          git merge-base --is-ancestor HEAD origin/main
+          VERSION=$(node -p 'require("./package.json").version')
+          test "$GITHUB_REF_NAME" = "v$VERSION"
+          test "$VERSION" = "$(node -p 'require("./jsr.json").version')"
+  ci:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+  npm:
+    needs: [validate, ci]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke:pack
+      - name: Publish with OIDC
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          TAG=latest
+          case "$VERSION" in *-*) TAG=next ;; esac
+          if npm view "@kasperrt/konami@$VERSION" version >/dev/null 2>&1; then
+            echo "Version already published"
+          else
+            npm publish --access public --provenance --tag "$TAG"
+          fi
+      - name: Verify npm release
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          test "$(npm view "@kasperrt/konami@$VERSION" version)" = "$VERSION"
+  jsr:
+    needs: [validate, ci]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno publish
+      - name: Verify JSR release
+        run: |
+          VERSION=$(node -p 'require("./jsr.json").version')
+          curl --fail --retry 5 --retry-all-errors "https://jsr.io/@kasperrt/konami/${VERSION}_meta.json"

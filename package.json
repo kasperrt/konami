@@ -44,17 +44,25 @@
   },
   "scripts": {
     "build": "vite build && tsc --project tsconfig.build.json",
-    "check": "tsc --noEmit",
+    "check": "biome check . && tsc --noEmit",
     "test": "npm run build && tsc --project tsconfig.test.json && vitest run",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "publint && attw --pack --profile esm-only",
+    "fix": "biome check --write .",
+    "smoke:pack": "node scripts/smoke-pack.mjs",
+    "smoke:browser": "node scripts/smoke-browser.mjs",
+    "test:coverage": "npm test"
   },
   "devDependencies": {
-    "@types/node": "^22.20.4",
-    "@vitest/coverage-v8": "^4.1.11",
-    "terser": "^5.51.0",
-    "typescript": "^7.0.2",
+    "@arethetypeswrong/cli": "0.18.5",
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "22.20.4",
+    "@vitest/coverage-v8": "4.1.11",
+    "playwright": "1.64.1",
+    "publint": "0.3.25",
+    "terser": "5.51.0",
+    "typescript": "7.0.2",
     "vite": "8.1.2",
-    "vitest": "^4.1.11"
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=18"
