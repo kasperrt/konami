@@ -5,6 +5,7 @@ effects until you call it, and it returns a cleanup function for easy use in
 framework lifecycles.
 
 [![CI](https://github.com/kasperrt/konami/actions/workflows/ci.yml/badge.svg)](https://github.com/kasperrt/konami/actions/workflows/ci.yml)
+[![Bundle size](https://deno.bundlejs.com/?q=%40kasperrt%2Fkonami&badge=detailed)](https://bundlejs.com/?q=%40kasperrt%2Fkonami)
 
 ## Install
 
